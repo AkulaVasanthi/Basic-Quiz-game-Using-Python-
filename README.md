@@ -25,8 +25,12 @@ Run the Python script: python quiz_app.py
 
 # Code Overview
 question_bank: A dictionary containing questions and their multiple-choice options.
+
 answer_bank: A dictionary with the correct answer for each question.
+
 Random selection of questions to create a varied quiz experience every time.
+
 User interactions handled via Tkinter widgets: Label, Radiobutton, Button, and Frame.
+
 Score and quiz progress tracked with global variables.
 
