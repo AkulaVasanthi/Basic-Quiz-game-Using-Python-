@@ -36,47 +36,93 @@ current_question_index = 0
 user_score = 0
 attempted_questions = 0
 
+# To keep track of user answers per question (index-based)
+user_answers = [None] * len(question_list)
 
 # === FUNCTIONS ===
 def start_quiz():
     start_button.forget()
     button_frame.pack(pady=20)
-    next_button.pack(side=LEFT, padx=20)
-    quit_button.pack(side=LEFT, padx=20)
-    next_question()
+    prev_button.pack(side=LEFT, padx=10)
+    next_button.pack(side=LEFT, padx=10)
+    quit_button.pack(side=LEFT, padx=10)
+    show_question()
 
-def next_question():
-    global current_question_index
-    user_ans.set('None')
+def show_question():
     clear_frame()
+    global current_question_index
 
     if current_question_index < len(question_list):
         q = question_list[current_question_index]
         Label(f1, text=f"Question {current_question_index + 1}: {q}", font="calibre 20 normal", padx=15, pady=10, wraplength=750, justify=LEFT).pack(anchor=NW)
+        
+        # Set user_ans to previously selected answer or None
+        if user_answers[current_question_index] is not None:
+            user_ans.set(user_answers[current_question_index])
+        else:
+            user_ans.set('None')
+
         for opt in selected_questions[q]:
             Radiobutton(f1, text=opt, variable=user_ans, value=opt, font="calibre 16 normal", padx=20).pack(anchor=NW)
+
+    update_buttons()
+
+def update_buttons():
+    # Disable Prev button if on first question
+    if current_question_index == 0:
+        prev_button.config(state=DISABLED)
     else:
-        show_result()
+        prev_button.config(state=NORMAL)
 
-def check_and_store_answer():
-    global user_score, attempted_questions, current_question_index
+    # Disable Next button if on last question
+    if current_question_index == len(question_list) - 1:
+        next_button.config(text="Submit")
+    else:
+        next_button.config(text="Next Question")
 
-    if current_question_index < len(question_list):
-        q = question_list[current_question_index]
-        selected = user_ans.get()
-        correct = answer_bank[q]
-
-        if selected != "None":
+def save_answer():
+    global attempted_questions, user_score
+    selected = user_ans.get()
+    if selected != 'None':
+        # If this question was not answered before, increment attempted_questions
+        if user_answers[current_question_index] is None:
             attempted_questions += 1
-            if selected == correct:
-                user_score += 1
+        user_answers[current_question_index] = selected
+    else:
+        # If changing answer to None, decrement attempted if previously answered
+        if user_answers[current_question_index] is not None:
+            attempted_questions -= 1
+        user_answers[current_question_index] = None
 
+def next_question():
+    global current_question_index
+    save_answer()
+
+    # If last question, show results
+    if current_question_index == len(question_list) - 1:
+        calculate_score()
+        show_result()
+    else:
         current_question_index += 1
+        show_question()
+
+def prev_question():
+    global current_question_index
+    save_answer()
+    if current_question_index > 0:
+        current_question_index -= 1
+        show_question()
+
+def calculate_score():
+    global user_score
+    user_score = 0
+    for idx, q in enumerate(question_list):
+        if user_answers[idx] == answer_bank[q]:
+            user_score += 1
 
 def show_result():
-    next_button.forget()
-    quit_button.forget()
     clear_frame()
+    button_frame.forget()
 
     total = len(question_list)
     wrong = attempted_questions - user_score
@@ -89,7 +135,8 @@ def show_result():
     Label(f1, text="Thanks for Participating!😊", font="calibre 18 italic").pack()
 
 def quit_quiz():
-    check_and_store_answer()
+    save_answer()
+    calculate_score()
     show_result()
 
 def clear_frame():
@@ -117,10 +164,19 @@ f1.pack(side=TOP, fill=X)
 # Buttons (hidden at start)
 button_frame = Frame(root)
 
+prev_button = Button(
+    button_frame,
+    text="Previous Question",
+    command=prev_question,
+    font="calibre 20 bold",
+    background="#D3D3D3",  # Light Gray
+    width=15
+)
+
 next_button = Button(
     button_frame,
     text="Next Question",
-    command=lambda: [check_and_store_answer(), next_question()],
+    command=next_question,
     font="calibre 20 bold",
     background="#87CEEB",  # SkyBlue
     width=15
